@@ -64,15 +64,15 @@ export const MATERIAL_QUALITY = {
 };
 
 export const RENDERING_LIGHTING = {
-  classic_daylight: { name: "Classic Daylight", low_light: false, phrase: "Bright clear midday sunlight, crisp and sharp directional shadows, high-quality clear sky HDRI environment, physically accurate path-traced light bounces, realistic global illumination (GI), subtle ambient occlusion (AO), high contrast, vibrant yet natural architectural lighting." },
-  tropical_morning: { name: "Tropical Morning", low_light: false, phrase: "Fresh tropical morning sunlight, soft warm directional light, bright blue sky HDRI environment with subtle scattered clouds, physically accurate path-traced light bounces, realistic global illumination (GI), gentle ambient occlusion (AO), balanced exposure, crisp natural shadows, vibrant tropical atmosphere, highly photorealistic architectural lighting." },
-  golden_hour: { name: "Golden Hour", low_light: false, phrase: "Cinematic golden hour lighting, low sun angle, warm orange and soft magenta sky, long soft directional shadows, high-quality sunset HDRI lighting, physically accurate path-traced light bounces, realistic global illumination (GI), glowing atmosphere, natural atmospheric depth." },
+  classic_daylight: { name: "Classic Daylight", phrase: "Bright clear midday sunlight, crisp and sharp directional shadows, high-quality clear sky HDRI environment, physically accurate path-traced light bounces, realistic global illumination (GI), subtle ambient occlusion (AO), high contrast, vibrant yet natural architectural lighting." },
+  tropical_morning: { name: "Tropical Morning", phrase: "Fresh tropical morning sunlight, soft warm directional light, bright blue sky HDRI environment with subtle scattered clouds, physically accurate path-traced light bounces, realistic global illumination (GI), gentle ambient occlusion (AO), balanced exposure, crisp natural shadows, vibrant tropical atmosphere, highly photorealistic architectural lighting." },
+  golden_hour: { name: "Golden Hour", phrase: "Cinematic golden hour lighting, low sun angle, warm orange and soft magenta sky, long soft directional shadows, high-quality sunset HDRI lighting, physically accurate path-traced light bounces, realistic global illumination (GI), glowing atmosphere, natural atmospheric depth." },
   blue_hour_twilight: { name: "Blue Hour / Twilight", low_light: true, phrase: "Deep blue hour evening sky, twilight atmosphere, cool ambient exterior light contrasting with warm glowing interior lights, high-quality twilight HDRI environment, physically accurate path-traced light bounces, realistic global illumination (GI), illuminated landscape features, rich cinematic architectural mood." }
 };
 
 export const PHOTOGRAPHY_LIGHTING = {
-  golden_hour: { name: "Golden Hour", low_light: false, phrase: "Soft golden hour sunlight piercing through adjacent trees, long dynamic shadows across the facade, warm amber hues beautifully contrasting with cool ambient shadow light, un-staged natural lighting, realistic exposure falloff." },
-  overcast: { name: "Overcast", low_light: false, phrase: "Overcast sky with soft diffused natural lighting, flat but moody contrast, subtle environmental bounce light from the ground, zero harsh shadows, slight atmospheric haze emphasizing physical textures." },
+  golden_hour: { name: "Golden Hour", phrase: "Soft golden hour sunlight piercing through adjacent trees, long dynamic shadows across the facade, warm amber hues beautifully contrasting with cool ambient shadow light, un-staged natural lighting, realistic exposure falloff." },
+  overcast: { name: "Overcast", phrase: "Overcast sky with soft diffused natural lighting, flat but moody contrast, subtle environmental bounce light from the ground, zero harsh shadows, slight atmospheric haze emphasizing physical textures." },
   blue_hour: { name: "Blue Hour", low_light: true, phrase: "Blue hour dusk natural lighting, deep indigo sky, perfectly balanced with warm artificial interior lights glowing softly through the architectural glass, subtle exterior landscape lighting, realistic high dynamic range." }
 };
 
