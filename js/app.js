@@ -228,6 +228,42 @@ const PHOTOGRAPHY_OUTPUT = {
 // 3. PROMPT ENGINE BUILDER (EXACT PORT FROM RUBY MAIN.RB)
 // ================================================================
 
+// Klausa-klausa berikut hanya masuk akal untuk pemandangan LUAR (langit,
+// lanskap, fasad, dsb). Untuk render Interior, klausa semacam ini dibuang
+// dari teks preset lighting/output agar tidak "membocorkan" instruksi
+// membuat bukaan/pemandangan ke luar pada ruangan tertutup.
+const EXTERIOR_ONLY_PATTERN = new RegExp(
+  [
+    "\\bsky\\b", "\\bhdri\\b", "\\blandscap\\w*\\b", "\\bfacade\\b", "\\bfaçade\\b",
+    "\\bvegetation\\b", "\\bfoliage\\b", "\\blawn\\b", "\\bgarden\\b", "\\bgrass\\b",
+    "\\bcanopy\\b", "\\bpavement\\b", "\\basphalt\\b", "\\bpool\\b", "\\bocean\\b",
+    "\\bsea\\b", "\\bcoastal\\b", "\\bmarine\\b", "\\bmountain\\b", "\\bhills?\\b",
+    "\\bcloud(s|y)?\\b", "\\bstorm\\b", "\\bmist\\b", "\\bfog\\b", "\\brain\\b",
+    "\\brainy\\b", "\\bwildflower\\b", "\\bmoss\\b", "\\bbirch\\b", "\\bpalms?\\b",
+    "\\bhedges?\\b", "\\btrees?\\b", "\\bfrangipani\\b", "\\bexterior\\b",
+    "\\boutdoor\\b", "\\bsite elements?\\b", "\\benvironment\\b"
+  ].join("|"),
+  "i"
+);
+
+// Memecah sebuah frasa preset menjadi klausa (dipisah koma), membuang
+// klausa yang secara eksplisit mendeskripsikan elemen luar ruangan, lalu
+// menyusunnya kembali. Kalau hasil filternya jadi terlalu sedikit/gundul,
+// fallback ke frasa aman generik supaya deskripsi lighting tidak kosong.
+function sanitizeForInterior(phrase) {
+  if (!phrase) return phrase;
+  const clauses = phrase.split(",").map(c => c.trim()).filter(Boolean);
+  const kept = clauses.filter(c => !EXTERIOR_ONLY_PATTERN.test(c));
+
+  // Kalau lebih dari separuh klausa terbuang, frasa itu memang preset yang
+  // dirancang untuk exterior — pakai deskripsi netral saja daripada
+  // menyisakan potongan kalimat yang janggal.
+  if (kept.length === 0 || kept.length < clauses.length * 0.4) {
+    return "Soft, evenly diffused daylight quality appropriate for an enclosed interior space, physically accurate global illumination, natural shadow gradients, no visible sky or outdoor scenery implied";
+  }
+  return kept.join(", ");
+}
+
 function buildPrompt({ type, style, track, lightingKey, outputKey }) {
   const isExterior = type.toLowerCase() === "exterior";
   const currentTrack = track === "photography" ? "photography" : "rendering";
@@ -239,6 +275,12 @@ function buildPrompt({ type, style, track, lightingKey, outputKey }) {
   const lighting = lightingLib[lightingKey] || Object.values(lightingLib)[0];
   const output = (outputKey && outputKey !== "none" && outputLib[outputKey]) ? outputLib[outputKey] : null;
 
+  // Untuk Interior, saring dulu klausa-klausa yang menyiratkan pemandangan
+  // luar (langit terbuka, HDRI environment, lanskap, dst) dari teks preset
+  // sebelum dipakai di dalam prompt.
+  const lightingPhrase = isExterior ? lighting.phrase : sanitizeForInterior(lighting.phrase);
+  const outputPhrase = output ? (isExterior ? output.phrase : sanitizeForInterior(output.phrase)) : null;
+
   const parts = [];
 
   // 1. Geometry Lock Statement
@@ -249,11 +291,22 @@ function buildPrompt({ type, style, track, lightingKey, outputKey }) {
   parts.push(CAMERA_STYLE[currentTrack]);
 
   // 3. Lighting Setup
-  parts.push(`Lighting setup — ${lighting.name}: ${lighting.phrase}`);
+  parts.push(`Lighting setup — ${lighting.name}: ${lightingPhrase}`);
 
   // 4. Subject Focus
   const baseSubject = isExterior ? "architectural exterior facade" : "architectural interior";
   parts.push(`This is a ${baseSubject} render of the full scene, preserving every wall, opening, and volume exactly as modeled.`);
+
+  // 4b. Interior-specific opening lock — this only exists because renders
+  // kept turning solid interior doors/walls into openings onto the exterior.
+  if (!isExterior) {
+    parts.push(
+      "This interior space is enclosed exactly as modeled: do not add, enlarge, or reinterpret any door, wall, " +
+      "or opening as a view to the outside. Every door stays a solid, closed door and every wall stays a solid " +
+      "wall unless a window is already explicitly present in the reference image — no new sky, landscape, or " +
+      "exterior scenery may be introduced anywhere in the frame."
+    );
+  }
 
   // 5. Design Style & Material Details
   parts.push(`Rendered in ${style}, the space carries a ${styleData.vibe} atmosphere, built around ${styleData.palette}, finished in ${styleData.materials}, and furnished with ${styleData.furniture}.`);
@@ -263,7 +316,15 @@ function buildPrompt({ type, style, track, lightingKey, outputKey }) {
     parts.push(`Outside, the landscaping stays consistent: ${styleData.vegetation_outdoor}.`);
     parts.push(`Underfoot and along the approach, ${styleData.ground_materials} ground the whole composition.`);
   } else {
-    parts.push(`Indoors, ${styleData.vegetation_indoor} soften the room, while glimpses through the openings reveal ${styleData.vegetation_outdoor} just beyond.`);
+    // Tidak lagi memaksa asumsi "ada jendela yang menampakkan taman di
+    // luar" — website ini tidak tahu apakah ruangan tersebut punya jendela
+    // ke luar sama sekali, jadi glimpse ke luar dibuat kondisional, bukan
+    // wajib.
+    parts.push(
+      `Indoors, ${styleData.vegetation_indoor} soften the room. If — and only if — a window to the outside is ` +
+      `already visible in the reference image, whatever lies beyond it should read as ${styleData.vegetation_outdoor}; ` +
+      `otherwise no exterior view should appear at all.`
+    );
   }
 
   // 7. Artificial Lighting Fixtures
@@ -280,7 +341,7 @@ function buildPrompt({ type, style, track, lightingKey, outputKey }) {
   // 9. Output Direction (Render Engine or Photographer Style)
   if (output) {
     const label = currentTrack === "photography" ? "in the documentary/editorial style of" : "in the visual language of";
-    parts.push(`Output direction — ${output.name}: ${output.phrase} Render ${label} ${output.name}.`);
+    parts.push(`Output direction — ${output.name}: ${outputPhrase} Render ${label} ${output.name}.`);
   }
 
   // 10. Geometry Lock Reminder
